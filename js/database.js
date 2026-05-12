@@ -42,15 +42,23 @@ function loadData(store) {
 
 /**
  * Ganti seluruh isi object store dengan array data baru.
+ * Menggunakan put() agar tidak error saat key sudah ada.
  * @param {string} store
  * @param {Array}  data
+ * @returns {Promise}
  */
 function saveData(store, data) {
-    const tx       = db.transaction(store, 'readwrite');
-    const storeObj = tx.objectStore(store);
-    storeObj.clear();
-    data.forEach(d => storeObj.add(d));
-    return new Promise(r => tx.oncomplete = r);
+    return new Promise((resolve, reject) => {
+        const tx       = db.transaction(store, 'readwrite');
+        const storeObj = tx.objectStore(store);
+        tx.oncomplete = () => resolve();
+        tx.onerror    = (e) => { console.error('saveData error:', e.target.error); reject(e.target.error); };
+        const clearReq = storeObj.clear();
+        clearReq.onsuccess = () => {
+            data.forEach(d => storeObj.put(d));
+        };
+        clearReq.onerror = (e) => { console.error('clear error:', e.target.error); reject(e.target.error); };
+    });
 }
 
 /**
