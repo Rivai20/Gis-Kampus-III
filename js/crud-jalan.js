@@ -7,32 +7,43 @@
  * Simpan jalan baru dari form atau hasil gambar di peta.
  */
 async function saveJalan() {
-    const nama = document.getElementById('jalan_nama').value;
-    let koord;
+    const nama     = document.getElementById('jalan_nama').value.trim();
+    const koordRaw = document.getElementById('jalan_koordinat').value.trim();
 
+    if (!koordRaw) {
+        alert('Koordinat kosong!\nGunakan tombol ✏️ Gambar Jalan, atau isi manual.');
+        return;
+    }
+
+    let koord;
     try {
-        koord = JSON.parse(document.getElementById('jalan_koordinat').value);
+        koord = JSON.parse(koordRaw);
     } catch (e) {
-        alert('Format koordinat tidak valid (harus JSON array)');
+        alert('Format koordinat tidak valid.\nContoh: [[lat,lng],[lat,lng]]');
         return;
     }
 
     if (!Array.isArray(koord) || koord.length < 2) {
-        alert('Minimal 2 titik koordinat');
+        alert('Minimal 2 titik koordinat untuk jalan.');
         return;
     }
 
-    const jalan = await loadData('jalan');
-    jalan.push({ id: 'j' + Date.now(), nama: nama || 'Jalan', koordinat: koord });
+    try {
+        const jalan = await loadData('jalan');
+        const entry = { id: 'j' + Date.now(), nama: nama || 'Jalan Baru', koordinat: koord };
+        jalan.push(entry);
+        await saveData('jalan', jalan);
+        await addHistory('CREATE', 'Jalan', { nama: entry.nama });
 
-    await saveData('jalan', jalan);
-    await addHistory('CREATE', 'Jalan', { nama });
+        document.getElementById('jalan_nama').value      = '';
+        document.getElementById('jalan_koordinat').value = '';
 
-    // Bersihkan form
-    document.getElementById('jalan_nama').value       = '';
-    document.getElementById('jalan_koordinat').value  = '';
-
-    renderMap();
+        alert('✅ Jalan berhasil disimpan!');
+        renderMap();
+    } catch (err) {
+        console.error('saveJalan error:', err);
+        alert('Gagal menyimpan: ' + err.message);
+    }
 }
 
 /**
