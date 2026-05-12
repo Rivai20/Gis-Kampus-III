@@ -8,34 +8,45 @@
  * Simpan zona baru dari form atau hasil gambar di peta.
  */
 async function saveZona() {
-    const nama     = document.getElementById('zona_nama').value;
+    const nama     = document.getElementById('zona_nama').value.trim();
     const jenis    = document.getElementById('zona_jenis').value;
     const parentId = document.getElementById('zona_parent').value || null;
-    let koord;
+    const koordRaw = document.getElementById('zona_koordinat').value.trim();
 
+    if (!koordRaw) {
+        alert('Koordinat kosong!\nGunakan tombol ✏️ Gambar Zona, atau isi manual.');
+        return;
+    }
+
+    let koord;
     try {
-        koord = JSON.parse(document.getElementById('zona_koordinat').value);
+        koord = JSON.parse(koordRaw);
     } catch (e) {
-        alert('Format polygon salah (harus JSON array)');
+        alert('Format polygon salah.\nContoh: [[lat,lng],[lat,lng],[lat,lng]]');
         return;
     }
 
     if (!Array.isArray(koord) || koord.length < 3) {
-        alert('Minimal 3 titik koordinat untuk polygon');
+        alert('Minimal 3 titik koordinat untuk zona.');
         return;
     }
 
-    const zona = await loadData('zona');
-    zona.push({ id: 'z' + Date.now(), nama, jenis, parentId, koordinat: koord });
+    try {
+        const zona  = await loadData('zona');
+        const entry = { id: 'z' + Date.now(), nama: nama || 'Zona Baru', jenis, parentId, koordinat: koord };
+        zona.push(entry);
+        await saveData('zona', zona);
+        await addHistory('CREATE', 'Zona', { nama: entry.nama });
 
-    await saveData('zona', zona);
-    await addHistory('CREATE', 'Zona', { nama });
+        document.getElementById('zona_nama').value      = '';
+        document.getElementById('zona_koordinat').value = '';
 
-    // Bersihkan form
-    document.getElementById('zona_nama').value      = '';
-    document.getElementById('zona_koordinat').value = '';
-
-    renderMap();
+        alert('✅ Zona berhasil disimpan!');
+        renderMap();
+    } catch (err) {
+        console.error('saveZona error:', err);
+        alert('Gagal menyimpan: ' + err.message);
+    }
 }
 
 /**
