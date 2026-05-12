@@ -1,0 +1,70 @@
+/**
+ * js/crud-zona.js
+ * Operasi Create, Read, Update, Delete untuk data Zona (polygon).
+ * Mendukung zona bersarang (nested) dengan parentId.
+ */
+
+/**
+ * Simpan zona baru dari form atau hasil gambar di peta.
+ */
+async function saveZona() {
+    const nama     = document.getElementById('zona_nama').value;
+    const jenis    = document.getElementById('zona_jenis').value;
+    const parentId = document.getElementById('zona_parent').value || null;
+    let koord;
+
+    try {
+        koord = JSON.parse(document.getElementById('zona_koordinat').value);
+    } catch (e) {
+        alert('Format polygon salah (harus JSON array)');
+        return;
+    }
+
+    if (!Array.isArray(koord) || koord.length < 3) {
+        alert('Minimal 3 titik koordinat untuk polygon');
+        return;
+    }
+
+    const zona = await loadData('zona');
+    zona.push({ id: 'z' + Date.now(), nama, jenis, parentId, koordinat: koord });
+
+    await saveData('zona', zona);
+    await addHistory('CREATE', 'Zona', { nama });
+
+    // Bersihkan form
+    document.getElementById('zona_nama').value      = '';
+    document.getElementById('zona_koordinat').value = '';
+
+    renderMap();
+}
+
+/**
+ * Hapus zona berdasarkan id.
+ * Zona anak (parentId === id) juga ikut dihapus.
+ * @param {string} id
+ */
+async function deleteZona(id) {
+    if (!confirm('Hapus zona ini (termasuk zona anak)?')) return;
+
+    // Hapus zona yang id-nya cocok ATAU zona anak yang parentId-nya cocok
+    const zona = (await loadData('zona')).filter(z => z.id !== id && z.parentId !== id);
+    await saveData('zona', zona);
+    await addHistory('DELETE', 'Zona', { id });
+    renderMap();
+}
+
+/**
+ * Isi form edit dengan data zona yang dipilih.
+ * @param {string} id
+ */
+async function editZona(id) {
+    const zona = await loadData('zona');
+    const z    = zona.find(x => x.id === id);
+    if (!z) return;
+
+    document.getElementById('zona_nama').value      = z.nama;
+    document.getElementById('zona_jenis').value     = z.jenis;
+    document.getElementById('zona_parent').value    = z.parentId || '';
+    document.getElementById('zona_koordinat').value = JSON.stringify(z.koordinat);
+    switchTab('zona');
+}

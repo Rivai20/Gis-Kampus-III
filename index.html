@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>SIG Kampus III UNKHAIR - Mobile Ready</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Toggle Sidebar" aria-label="Toggle sidebar">☰</button>
+        <h1>🗺️ SIG Kampus III UNKHAIR</h1>
+    </div>
+    <div class="header-buttons">
+        <button class="btn btn-primary" onclick="exportData()">📥 Export</button>
+        <button class="btn btn-info" onclick="importData()">📤 Import</button>
+        <button class="btn btn-warning" onclick="resetToDefault()">⟳ Reset</button>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('bangunan')">🏢 Bangunan</button>
+            <button class="tab-btn" onclick="switchTab('jalan')">🛣️ Jalan</button>
+            <button class="tab-btn" onclick="switchTab('zona')">🗺️ Zona</button>
+            <button class="tab-btn" onclick="switchTab('history')">📜 History</button>
+        </div>
+
+        <!-- Tab Bangunan -->
+        <div id="tab-bangunan" class="tab-content active">
+            <h3 style="font-size:0.9rem; margin-bottom:12px;">➕ Tambah/Edit Bangunan</h3>
+            <div style="background:#e9f5e9; padding:8px; border-radius:16px; margin-bottom:12px; font-size:0.7rem;">
+                💡 Klik pada peta untuk isi koordinat otomatis
+            </div>
+            <form id="formBangunan" onsubmit="event.preventDefault(); addOrUpdateBangunan()">
+                <input type="hidden" id="bangunan_id">
+                <div class="form-group"><label>Nama Bangunan *</label><input type="text" id="bangunan_nama" required placeholder="ex: Gedung Rektorat"></div>
+                <div class="form-group"><label>Fungsi</label><input type="text" id="bangunan_fungsi" placeholder="Fungsi Ruangan"></div>
+                <div class="form-group"><label>Jenis</label>
+                    <select id="bangunan_jenis">
+                        <option value="perkuliahan">🏛️ Perkuliahan</option>
+                        <option value="laboratorium">🔬 Laboratorium</option>
+                        <option value="administrasi">📋 Administrasi</option>
+                        <option value="fasilitas">☕ Fasilitas Umum</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Kapasitas</label><input type="number" id="bangunan_kapasitas" placeholder="Jumlah orang"></div>
+                <div class="form-group"><label>Inventaris</label><textarea id="bangunan_inventaris" placeholder="PC, meja, dll"></textarea></div>
+                <div class="form-group"><label>Pengelola</label><input type="text" id="bangunan_pengelola" placeholder="Nama pengelola"></div>
+                <div class="form-group"><label>Latitude</label><input type="number" step="any" id="bangunan_lat" required placeholder="Contoh: 0.776020"></div>
+                <div class="form-group"><label>Longitude</label><input type="number" step="any" id="bangunan_lng" required placeholder="127.374358"></div>
+                <button type="submit" class="btn btn-success" style="width:100%;">💾 Simpan Bangunan</button>
+                <button type="button" class="btn btn-warning" style="width:100%; margin-top:6px;" onclick="clearBangunanForm()">🗑️ Batal</button>
+            </form>
+            <hr style="margin:16px 0;">
+            <h3 style="font-size:0.85rem;">📋 Daftar Bangunan</h3>
+            <div id="bangunanList"></div>
+        </div>
+
+        <!-- Tab Jalan -->
+        <div id="tab-jalan" class="tab-content">
+            <h3 style="font-size:0.9rem;">➕ Tambah Jalan</h3>
+            <div class="form-group"><label>Nama Jalan</label><input type="text" id="jalan_nama" placeholder="Jalan Utama"></div>
+            <div class="form-group"><label>Koordinat (LineString)</label><textarea id="jalan_koordinat" rows="2" placeholder="[[lat,lng],[lat,lng]]"></textarea></div>
+            <button class="btn btn-primary" onclick="startDrawLine()">✏️ Gambar Jalan di Peta</button>
+            <button class="btn btn-danger" onclick="cancelDrawing()">❌ Batal</button>
+            <button class="btn btn-success" style="margin-top:12px; width:100%;" onclick="saveJalan()">💾 Simpan Jalan</button>
+            <hr style="margin:16px 0;">
+            <h3>🛣️ Daftar Jalan</h3>
+            <div id="jalanList"></div>
+        </div>
+
+        <!-- Tab Zona -->
+        <div id="tab-zona" class="tab-content">
+            <h3 style="font-size:0.9rem;">➕ Tambah Zona (Nested)</h3>
+            <div class="form-group"><label>Nama Zona</label><input type="text" id="zona_nama" placeholder="Zona Akademik"></div>
+            <div class="form-group"><label>Jenis Zona</label>
+                <select id="zona_jenis">
+                    <option value="perkuliahan">📚 Perkuliahan</option>
+                    <option value="parkir">🅿️ Parkir</option>
+                    <option value="hijau">🌿 Ruang Terbuka Hijau</option>
+                    <option value="administrasi">📄 Administrasi</option>
+                    <option value="batas">🚧 Batas Wilayah</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Zona Induk (opsional)</label>
+                <select id="zona_parent"><option value="">-- Zona Utama --</option></select>
+            </div>
+            <div class="form-group"><label>Koordinat Polygon</label><textarea id="zona_koordinat" rows="2" placeholder="[[lat,lng],[lat,lng]]"></textarea></div>
+            <button class="btn btn-primary" onclick="startDrawPolygon()">✏️ Gambar Zona di Peta</button>
+            <button class="btn btn-danger" onclick="cancelDrawing()">❌ Batal</button>
+            <button class="btn btn-success" style="margin-top:12px; width:100%;" onclick="saveZona()">💾 Simpan Zona</button>
+            <hr style="margin:16px 0;">
+            <h3>🗺️ Hierarki Zona</h3>
+            <div id="zonaList"></div>
+        </div>
+
+        <!-- Tab History -->
+        <div id="tab-history" class="tab-content">
+            <h3 style="font-size:0.9rem;">📜 Riwayat Perubahan</h3>
+            <button class="btn btn-danger btn-sm" onclick="clearHistory()">🗑️ Hapus Semua History</button>
+            <div id="historyList" style="margin-top:12px;"></div>
+            <button class="btn btn-success" style="margin-top:12px;" onclick="exportHistory()">📥 Export History</button>
+        </div>
+    </div>
+
+    <div id="map"></div>    
+</div>
+
+<div class="coord-info" id="coordInfo">📍 Klik peta untuk isi koordinat Bangunan</div>
+
+<div class="draw-mode" id="drawModeIndicator">✏️ Mode Gambar Aktif — Klik untuk titik, Double klik selesai</div>
+
+<!-- Scripts: urutan penting! -->
+<script src="data/default-data.js"></script>
+<script src="js/database.js"></script>
+<script src="js/map.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/crud-bangunan.js"></script>
+<script src="js/crud-jalan.js"></script>
+<script src="js/crud-zona.js"></script>
+<script src="js/history.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
