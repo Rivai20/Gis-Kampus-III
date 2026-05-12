@@ -127,18 +127,40 @@ async function renderMap() {
 }
 
 /**
- * Klik peta → isi otomatis koordinat pada form bangunan.
+ * Satu handler click terpusat untuk seluruh peta.
+ * - Jika mode gambar aktif  → tambah titik ke drawingPoints
+ * - Jika tab bangunan aktif → isi form koordinat
+ *
+ * Menggunakan flag `ignoreNextClick` untuk menyaring click
+ * yang merupakan bagian dari double-click (Leaflet menembak
+ * click 2× sebelum dblclick, sehingga titik tidak dobel masuk).
  */
+let ignoreNextClick = false;
+
 function setupCoordPicker() {
     map.on('click', e => {
-        if (document.querySelector('.tab-content.active')?.id === 'tab-bangunan') {
+        if (ignoreNextClick) { ignoreNextClick = false; return; }
+
+        if (drawingMode) {
+            // Mode menggambar — tambah titik
+            drawingPoints.push([e.latlng.lat, e.latlng.lng]);
+            redrawTempLayer();
+        } else if (document.querySelector('.tab-content.active')?.id === 'tab-bangunan') {
+            // Mode normal tab bangunan — isi koordinat form
             document.getElementById('bangunan_lat').value = e.latlng.lat.toFixed(7);
             document.getElementById('bangunan_lng').value = e.latlng.lng.toFixed(7);
-
             const info = document.getElementById('coordInfo');
             info.innerHTML = `✅ Koordinat: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
             setTimeout(() => info.innerHTML = '📍 Klik peta untuk isi koordinat bangunan', 2000);
         }
+    });
+
+    // Double-click → selesaikan gambar
+    map.on('dblclick', e => {
+        if (!drawingMode) return;
+        L.DomEvent.stop(e);      // cegah zoom peta
+        ignoreNextClick = true;  // abaikan click terakhir dari dblclick
+        finishDrawing();
     });
 }
 
@@ -152,14 +174,14 @@ function startDrawing(type) {
     drawingMode   = type;
     drawingPoints = [];
     document.getElementById('drawModeIndicator').style.display = 'block';
-    map.on('click', onMapClick);
-    map.on('dblclick', finishDrawing);
+    // Nonaktifkan zoom saat double-click agar tidak konflik
+    map.doubleClickZoom.disable();
 }
 
-function onMapClick(e) {
-    if (!drawingMode) return;
-    drawingPoints.push([e.latlng.lat, e.latlng.lng]);
+/** Gambar ulang layer sementara sesuai titik yang sudah diklik. */
+function redrawTempLayer() {
     if (tempLayer) map.removeLayer(tempLayer);
+    if (drawingPoints.length < 1) return;
 
     if (drawingMode === 'line') {
         tempLayer = L.polyline(drawingPoints, { color: '#ff9800', weight: 4, dashArray: '5,5' }).addTo(map);
@@ -170,7 +192,7 @@ function onMapClick(e) {
 
 function finishDrawing() {
     if (!drawingMode || drawingPoints.length < 2) {
-        alert('Minimal 2 titik');
+        alert('Minimal 2 titik untuk jalan / 3 titik untuk zona');
         return;
     }
 
@@ -190,15 +212,13 @@ function finishDrawing() {
     }
 
     cancelDrawing();
-    alert('Koordinat tergambar!');
+    alert(`✅ ${final.length} titik berhasil direkam! Klik Simpan untuk menyimpan.`);
 }
 
 function cancelDrawing() {
-    if (tempLayer) map.removeLayer(tempLayer);
-    map.off('click', onMapClick);
-    map.off('dblclick', finishDrawing);
+    if (tempLayer) { map.removeLayer(tempLayer); tempLayer = null; }
     drawingMode   = null;
     drawingPoints = [];
-    tempLayer     = null;
     document.getElementById('drawModeIndicator').style.display = 'none';
+    map.doubleClickZoom.enable();
 }
