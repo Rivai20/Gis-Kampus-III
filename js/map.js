@@ -130,37 +130,20 @@ async function renderMap() {
  * Satu handler click terpusat untuk seluruh peta.
  * - Jika mode gambar aktif  → tambah titik ke drawingPoints
  * - Jika tab bangunan aktif → isi form koordinat
- *
- * Menggunakan flag `ignoreNextClick` untuk menyaring click
- * yang merupakan bagian dari double-click (Leaflet menembak
- * click 2× sebelum dblclick, sehingga titik tidak dobel masuk).
  */
-let ignoreNextClick = false;
-
 function setupCoordPicker() {
     map.on('click', e => {
-        if (ignoreNextClick) { ignoreNextClick = false; return; }
-
         if (drawingMode) {
-            // Mode menggambar — tambah titik
             drawingPoints.push([e.latlng.lat, e.latlng.lng]);
             redrawTempLayer();
+            updateDrawIndicator();
         } else if (document.querySelector('.tab-content.active')?.id === 'tab-bangunan') {
-            // Mode normal tab bangunan — isi koordinat form
             document.getElementById('bangunan_lat').value = e.latlng.lat.toFixed(7);
             document.getElementById('bangunan_lng').value = e.latlng.lng.toFixed(7);
             const info = document.getElementById('coordInfo');
             info.innerHTML = `✅ Koordinat: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
             setTimeout(() => info.innerHTML = '📍 Klik peta untuk isi koordinat bangunan', 2000);
         }
-    });
-
-    // Double-click → selesaikan gambar
-    map.on('dblclick', e => {
-        if (!drawingMode) return;
-        L.DomEvent.stop(e);      // cegah zoom peta
-        ignoreNextClick = true;  // abaikan click terakhir dari dblclick
-        finishDrawing();
     });
 }
 
@@ -173,14 +156,40 @@ function startDrawing(type) {
     cancelDrawing();
     drawingMode   = type;
     drawingPoints = [];
-    document.getElementById('drawModeIndicator').style.display = 'block';
-    // Nonaktifkan zoom saat double-click agar tidak konflik
     map.doubleClickZoom.disable();
+    map.getContainer().style.cursor = 'crosshair';
+    updateDrawIndicator();
+}
+
+/** Update teks dan tombol di banner mode gambar. */
+function updateDrawIndicator() {
+    const el    = document.getElementById('drawModeIndicator');
+    const count = drawingPoints.length;
+    const min   = drawingMode === 'line' ? 2 : 3;
+    const ready = count >= min;
+    el.style.display = drawingMode ? 'flex' : 'none';
+    el.style.alignItems = 'center';
+    el.style.gap = '8px';
+    el.innerHTML = `
+        <span>✏️ ${count} titik — ${ready ? 'siap disimpan' : `minimal ${min}`}</span>
+        ${ready ? `<button onclick="finishDrawing()" style="background:#0f3b2c;color:white;border:none;padding:4px 10px;border-radius:20px;font-weight:bold;cursor:pointer;">✅ Selesai</button>` : ''}
+        <button onclick="undoLastPoint()" style="background:#e74c3c;color:white;border:none;padding:4px 10px;border-radius:20px;font-weight:bold;cursor:pointer;" ${count===0?'disabled':''}>↩ Undo</button>
+        <button onclick="cancelDrawing()" style="background:#555;color:white;border:none;padding:4px 10px;border-radius:20px;font-weight:bold;cursor:pointer;">❌</button>
+    `;
+}
+
+/** Hapus titik terakhir. */
+function undoLastPoint() {
+    if (drawingPoints.length > 0) {
+        drawingPoints.pop();
+        redrawTempLayer();
+        updateDrawIndicator();
+    }
 }
 
 /** Gambar ulang layer sementara sesuai titik yang sudah diklik. */
 function redrawTempLayer() {
-    if (tempLayer) map.removeLayer(tempLayer);
+    if (tempLayer) { map.removeLayer(tempLayer); tempLayer = null; }
     if (drawingPoints.length < 1) return;
 
     if (drawingMode === 'line') {
@@ -191,15 +200,16 @@ function redrawTempLayer() {
 }
 
 function finishDrawing() {
-    if (!drawingMode || drawingPoints.length < 2) {
-        alert('Minimal 2 titik untuk jalan / 3 titik untuk zona');
+    const min = drawingMode === 'line' ? 2 : 3;
+    if (!drawingMode || drawingPoints.length < min) {
+        alert(`Minimal ${min} titik untuk ${drawingMode === 'line' ? 'jalan' : 'zona'}`);
         return;
     }
 
     let final = [...drawingPoints];
 
     // Tutup polygon jika belum tertutup
-    if (drawingMode === 'polygon' && final.length >= 3) {
+    if (drawingMode === 'polygon') {
         const first = final[0], last = final[final.length - 1];
         if (first[0] !== last[0] || first[1] !== last[1]) final.push(first);
     }
@@ -211,8 +221,8 @@ function finishDrawing() {
         document.getElementById('zona_koordinat').value = jsonStr;
     }
 
+    alert(`✅ ${drawingPoints.length} titik direkam! Sekarang klik 💾 Simpan.`);
     cancelDrawing();
-    alert(`✅ ${final.length} titik berhasil direkam! Klik Simpan untuk menyimpan.`);
 }
 
 function cancelDrawing() {
@@ -221,4 +231,5 @@ function cancelDrawing() {
     drawingPoints = [];
     document.getElementById('drawModeIndicator').style.display = 'none';
     map.doubleClickZoom.enable();
+    map.getContainer().style.cursor = '';
 }
