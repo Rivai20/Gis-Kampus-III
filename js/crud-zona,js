@@ -1,7 +1,3 @@
-// ============================================================
-// CRUD ZONA — Add / Edit / Delete
-// ============================================================
-
 async function saveZona() {
     const nama     = document.getElementById('zona_nama').value.trim();
     const jenis    = document.getElementById('zona_jenis').value;
