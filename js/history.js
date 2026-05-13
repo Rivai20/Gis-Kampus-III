@@ -1,7 +1,3 @@
-// ============================================================
-// HISTORY — Export & Hapus riwayat perubahan
-// ============================================================
-
 async function exportHistory() {
     const hist = await loadData('history');
     const a    = document.createElement('a');
