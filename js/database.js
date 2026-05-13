@@ -1,6 +1,3 @@
-// ============================================================
-// DATABASE — IndexedDB: initDB, loadData, saveData, addHistory
-// ============================================================
 const DB_NAME    = 'SIG_Kampus_Unkhair_Mobile';
 const DB_VERSION = 5;
 let db;
