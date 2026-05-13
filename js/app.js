@@ -1,7 +1,3 @@
-// ============================================================
-// APP — Entry point: init, exportData, importData, resetToDefault
-// ============================================================
-
 async function exportData() {
     const data = {
         bangunan  : await loadData('bangunan'),
