@@ -1,37 +1,25 @@
-/**
- * js/database.js
- * Pengelolaan IndexedDB: inisialisasi, load, save, dan history.
- * Semua fungsi database ada di sini.
- */
-
+// ============================================================
+// DATABASE — IndexedDB: initDB, loadData, saveData, addHistory
+// ============================================================
 const DB_NAME    = 'SIG_Kampus_Unkhair_Mobile';
 const DB_VERSION = 5;
 let db;
 
-/**
- * Buka / buat database IndexedDB.
- * Dipanggil sekali saat app pertama kali dijalankan.
- */
 function initDB() {
     return new Promise((resolve, reject) => {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
         req.onerror = () => reject(req.error);
         req.onsuccess = () => { db = req.result; resolve(); };
         req.onupgradeneeded = (e) => {
-            const dbUp = e.target.result;
-            if (!dbUp.objectStoreNames.contains('bangunan')) dbUp.createObjectStore('bangunan', { keyPath: 'id' });
-            if (!dbUp.objectStoreNames.contains('jalan'))    dbUp.createObjectStore('jalan',    { keyPath: 'id' });
-            if (!dbUp.objectStoreNames.contains('zona'))     dbUp.createObjectStore('zona',     { keyPath: 'id' });
-            if (!dbUp.objectStoreNames.contains('history'))  dbUp.createObjectStore('history',  { keyPath: 'timestamp' });
+            const d = e.target.result;
+            if (!d.objectStoreNames.contains('bangunan')) d.createObjectStore('bangunan', { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('jalan'))    d.createObjectStore('jalan',    { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('zona'))     d.createObjectStore('zona',     { keyPath: 'id' });
+            if (!d.objectStoreNames.contains('history'))  d.createObjectStore('history',  { keyPath: 'timestamp' });
         };
     });
 }
 
-/**
- * Ambil semua data dari object store tertentu.
- * @param {string} store - nama store: 'bangunan' | 'jalan' | 'zona' | 'history'
- * @returns {Promise<Array>}
- */
 function loadData(store) {
     return new Promise(res => {
         const tx  = db.transaction(store, 'readonly');
@@ -40,13 +28,6 @@ function loadData(store) {
     });
 }
 
-/**
- * Ganti seluruh isi object store dengan array data baru.
- * Menggunakan put() agar tidak error saat key sudah ada.
- * @param {string} store
- * @param {Array}  data
- * @returns {Promise}
- */
 function saveData(store, data) {
     return new Promise((resolve, reject) => {
         const tx       = db.transaction(store, 'readwrite');
@@ -54,26 +35,18 @@ function saveData(store, data) {
         tx.oncomplete = () => resolve();
         tx.onerror    = (e) => { console.error('saveData error:', e.target.error); reject(e.target.error); };
         const clearReq = storeObj.clear();
-        clearReq.onsuccess = () => {
-            data.forEach(d => storeObj.put(d));
-        };
-        clearReq.onerror = (e) => { console.error('clear error:', e.target.error); reject(e.target.error); };
+        clearReq.onsuccess = () => { data.forEach(d => storeObj.put(d)); };
+        clearReq.onerror   = (e) => reject(e.target.error);
     });
 }
 
-/**
- * Tambah satu entri ke tabel history.
- * @param {string} action  - CREATE | UPDATE | DELETE | RESET | IMPORT
- * @param {string} type    - Bangunan | Jalan | Zona | System
- * @param {object} detail  - objek detail (akan di-stringify, max 200 karakter)
- */
 function addHistory(action, type, detail) {
-    const history = {
+    const entry = {
         timestamp: Date.now(),
         action,
         type,
         data: JSON.stringify(detail).slice(0, 200)
     };
     const tx = db.transaction('history', 'readwrite');
-    tx.objectStore('history').add(history);
+    tx.objectStore('history').add(entry);
 }
