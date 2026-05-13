@@ -5,17 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>SIG Kampus III UNKHAIR</title>
 
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    <!-- App CSS -->
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- ============================================================
-     HEADER
-     ============================================================ -->
+
 <div class="header">
     <div class="header-left">
         <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Toggle Sidebar">☰</button>
@@ -28,9 +24,7 @@
     </div>
 </div>
 
-<!-- ============================================================
-     SEARCH BAR
-     ============================================================ -->
+
 <div class="search-bar-wrap" id="searchBarWrap">
     <div class="search-bar-inner">
         <span class="search-icon">🔍</span>
@@ -43,9 +37,6 @@
     <div class="search-results-overlay" id="searchResultsOverlay"></div>
 </div>
 
-<!-- ============================================================
-     DETAIL PANEL (floating di atas peta)
-     ============================================================ -->
 <div class="detail-panel" id="detailPanel">
     <div class="detail-panel-header">
         <div class="detail-panel-title" id="detailTitle">—</div>
@@ -56,15 +47,12 @@
     <div class="detail-actions" id="detailActions"></div>
 </div>
 
-<!-- ============================================================
-     MAIN CONTAINER
-     ============================================================ -->
+
 <div class="main-container">
 
-    <!-- Overlay gelap saat sidebar terbuka di mobile -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-    <!-- ---- SIDEBAR ---- -->
+  
     <div class="sidebar" id="sidebar">
         <div class="tab-buttons">
             <button class="tab-btn active" onclick="switchTab('bangunan')">🏢 Bangunan</button>
@@ -73,7 +61,7 @@
             <button class="tab-btn"        onclick="switchTab('history')">📜 History</button>
         </div>
 
-        <!-- Tab Bangunan -->
+  
         <div id="tab-bangunan" class="tab-content active">
             <h3 style="font-size:0.9rem; margin-bottom:12px;">➕ Tambah/Edit Bangunan</h3>
             <div style="background:#e9f5e9; padding:8px; border-radius:16px; margin-bottom:12px; font-size:0.7rem;">
@@ -127,7 +115,6 @@
             <div id="bangunanList"></div>
         </div>
 
-        <!-- Tab Jalan -->
         <div id="tab-jalan" class="tab-content">
             <h3 style="font-size:0.9rem;">➕ Tambah Jalan</h3>
             <div class="form-group">
@@ -149,7 +136,6 @@
             <div id="jalanList"></div>
         </div>
 
-        <!-- Tab Zona -->
         <div id="tab-zona" class="tab-content">
             <h3 style="font-size:0.9rem;">➕ Tambah Zona</h3>
             <div class="form-group">
@@ -187,7 +173,6 @@
             <div id="zonaList"></div>
         </div>
 
-        <!-- Tab History -->
         <div id="tab-history" class="tab-content">
             <h3 style="font-size:0.9rem;">📜 Riwayat Perubahan</h3>
             <button class="btn btn-danger btn-sm" onclick="clearHistory()">🗑️ Hapus Semua History</button>
@@ -195,31 +180,19 @@
             <button class="btn btn-success" style="margin-top:12px;" onclick="exportHistory()">📥 Export History</button>
         </div>
     </div>
-    <!-- ---- /SIDEBAR ---- -->
 
-    <!-- ---- MAP ---- -->
     <div id="map"></div>
 
 </div>
-<!-- ---- /MAIN CONTAINER ---- -->
-
-<!-- Floating info koordinat -->
 <div class="coord-info" id="coordInfo">📍 Klik peta untuk isi koordinat bangunan</div>
 
-<!-- Floating indikator mode gambar -->
 <div class="draw-mode" id="drawModeIndicator"></div>
 
-<!-- ============================================================
-     SCRIPTS — urutan penting!
-     ============================================================ -->
-
-<!-- Leaflet JS -->
+\
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- Data default -->
 <script src="data/default-data.js"></script>
 
-<!-- Modul-modul aplikasi -->
 <script src="js/database.js"></script>
 <script src="js/map.js"></script>
 <script src="js/sidebar.js"></script>
@@ -228,7 +201,6 @@
 <script src="js/crud-zona.js"></script>
 <script src="js/history.js"></script>
 
-<!-- Entry point — harus paling terakhir -->
 <script src="js/app.js"></script>
 
 </body>
