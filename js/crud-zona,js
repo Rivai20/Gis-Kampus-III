@@ -1,12 +1,7 @@
-/**
- * js/crud-zona.js
- * Operasi Create, Read, Update, Delete untuk data Zona (polygon).
- * Mendukung zona bersarang (nested) dengan parentId.
- */
+// ============================================================
+// CRUD ZONA — Add / Edit / Delete
+// ============================================================
 
-/**
- * Simpan zona baru dari form atau hasil gambar di peta.
- */
 async function saveZona() {
     const nama     = document.getElementById('zona_nama').value.trim();
     const jenis    = document.getElementById('zona_jenis').value;
@@ -14,7 +9,7 @@ async function saveZona() {
     const koordRaw = document.getElementById('zona_koordinat').value.trim();
 
     if (!koordRaw) {
-        alert('Koordinat kosong!\nGunakan tombol ✏️ Gambar Zona, atau isi manual.');
+        alert('Koordinat kosong!\nGunakan tombol ✏️ Gambar Zona terlebih dahulu.');
         return;
     }
 
@@ -22,7 +17,7 @@ async function saveZona() {
     try {
         koord = JSON.parse(koordRaw);
     } catch (e) {
-        alert('Format polygon salah.\nContoh: [[lat,lng],[lat,lng],[lat,lng]]');
+        alert('Format koordinat tidak valid.');
         return;
     }
 
@@ -37,42 +32,26 @@ async function saveZona() {
         zona.push(entry);
         await saveData('zona', zona);
         await addHistory('CREATE', 'Zona', { nama: entry.nama });
-
         document.getElementById('zona_nama').value      = '';
         document.getElementById('zona_koordinat').value = '';
-
         alert('✅ Zona berhasil disimpan!');
         renderMap();
     } catch (err) {
-        console.error('saveZona error:', err);
         alert('Gagal menyimpan: ' + err.message);
     }
 }
 
-/**
- * Hapus zona berdasarkan id.
- * Zona anak (parentId === id) juga ikut dihapus.
- * @param {string} id
- */
 async function deleteZona(id) {
     if (!confirm('Hapus zona ini (termasuk zona anak)?')) return;
-
-    // Hapus zona yang id-nya cocok ATAU zona anak yang parentId-nya cocok
     const zona = (await loadData('zona')).filter(z => z.id !== id && z.parentId !== id);
     await saveData('zona', zona);
     await addHistory('DELETE', 'Zona', { id });
     renderMap();
 }
 
-/**
- * Isi form edit dengan data zona yang dipilih.
- * @param {string} id
- */
 async function editZona(id) {
-    const zona = await loadData('zona');
-    const z    = zona.find(x => x.id === id);
+    const z = (await loadData('zona')).find(x => x.id === id);
     if (!z) return;
-
     document.getElementById('zona_nama').value      = z.nama;
     document.getElementById('zona_jenis').value     = z.jenis;
     document.getElementById('zona_parent').value    = z.parentId || '';
