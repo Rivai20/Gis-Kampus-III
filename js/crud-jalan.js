@@ -1,67 +1,57 @@
 // ============================================================
-// CRUD BANGUNAN — Add / Edit / Delete
+// CRUD JALAN — Add / Edit / Delete
 // ============================================================
 
-async function addOrUpdateBangunan() {
-    const id   = document.getElementById('bangunan_id').value || 'b' + Date.now();
-    const data = {
-        id,
-        nama      : document.getElementById('bangunan_nama').value,
-        fungsi    : document.getElementById('bangunan_fungsi').value,
-        jenis     : document.getElementById('bangunan_jenis').value,
-        kapasitas : parseInt(document.getElementById('bangunan_kapasitas').value) || 0,
-        inventaris: document.getElementById('bangunan_inventaris').value,
-        pengelola : document.getElementById('bangunan_pengelola').value,
-        latitude  : parseFloat(document.getElementById('bangunan_lat').value),
-        longitude : parseFloat(document.getElementById('bangunan_lng').value)
-    };
+async function saveJalan() {
+    const nama     = document.getElementById('jalan_nama').value.trim();
+    const koordRaw = document.getElementById('jalan_koordinat').value.trim();
 
-    if (!data.nama || isNaN(data.latitude)) {
-        alert('Isi nama & koordinat');
+    if (!koordRaw) {
+        alert('Koordinat kosong!\nGunakan tombol ✏️ Gambar Jalan terlebih dahulu.');
         return;
     }
 
-    let list = await loadData('bangunan');
-    const idx = list.findIndex(b => b.id === id);
-    if (idx >= 0) {
-        list[idx] = data;
-        await addHistory('UPDATE', 'Bangunan', { nama: data.nama });
-    } else {
-        list.push(data);
-        await addHistory('CREATE', 'Bangunan', { nama: data.nama });
+    let koord;
+    try {
+        koord = JSON.parse(koordRaw);
+    } catch (e) {
+        alert('Format koordinat tidak valid.');
+        return;
     }
 
-    await saveData('bangunan', list);
-    clearBangunanForm();
+    if (!Array.isArray(koord) || koord.length < 2) {
+        alert('Minimal 2 titik koordinat.');
+        return;
+    }
+
+    try {
+        const jalan = await loadData('jalan');
+        const entry = { id: 'j' + Date.now(), nama: nama || 'Jalan Baru', koordinat: koord };
+        jalan.push(entry);
+        await saveData('jalan', jalan);
+        await addHistory('CREATE', 'Jalan', { nama: entry.nama });
+        document.getElementById('jalan_nama').value      = '';
+        document.getElementById('jalan_koordinat').value = '';
+        alert('✅ Jalan berhasil disimpan!');
+        renderMap();
+    } catch (err) {
+        alert('Gagal menyimpan: ' + err.message);
+    }
+}
+
+async function deleteJalan(id) {
+    if (!confirm('Hapus jalan ini?')) return;
+    const jalan = await loadData('jalan');
+    const del   = jalan.find(j => j.id === id);
+    await saveData('jalan', jalan.filter(j => j.id !== id));
+    await addHistory('DELETE', 'Jalan', { nama: del?.nama });
     renderMap();
 }
 
-async function deleteBangunan(id) {
-    if (!confirm('Hapus bangunan ini?')) return;
-    let list  = await loadData('bangunan');
-    const del = list.find(b => b.id === id);
-    await saveData('bangunan', list.filter(b => b.id !== id));
-    await addHistory('DELETE', 'Bangunan', { nama: del?.nama });
-    renderMap();
-}
-
-async function editBangunan(id) {
-    const b = (await loadData('bangunan')).find(x => x.id === id);
-    if (!b) return;
-    document.getElementById('bangunan_id').value        = b.id;
-    document.getElementById('bangunan_nama').value       = b.nama;
-    document.getElementById('bangunan_fungsi').value     = b.fungsi     || '';
-    document.getElementById('bangunan_jenis').value      = b.jenis;
-    document.getElementById('bangunan_kapasitas').value  = b.kapasitas;
-    document.getElementById('bangunan_inventaris').value = b.inventaris || '';
-    document.getElementById('bangunan_pengelola').value  = b.pengelola  || '';
-    document.getElementById('bangunan_lat').value        = b.latitude;
-    document.getElementById('bangunan_lng').value        = b.longitude;
-    switchTab('bangunan');
-}
-
-function clearBangunanForm() {
-    ['bangunan_id', 'bangunan_nama', 'bangunan_fungsi', 'bangunan_kapasitas',
-     'bangunan_inventaris', 'bangunan_pengelola', 'bangunan_lat', 'bangunan_lng']
-        .forEach(id => document.getElementById(id).value = '');
+async function editJalan(id) {
+    const j = (await loadData('jalan')).find(x => x.id === id);
+    if (!j) return;
+    document.getElementById('jalan_nama').value      = j.nama      || '';
+    document.getElementById('jalan_koordinat').value = JSON.stringify(j.koordinat);
+    switchTab('jalan');
 }
