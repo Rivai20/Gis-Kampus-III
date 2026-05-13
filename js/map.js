@@ -1,11 +1,7 @@
-// ============================================================
-// MAP — Leaflet: render peta, marker, mode gambar
-// ============================================================
 let map;
 let buildingMarkers = [], roadLines = [], zonePolygons = [];
 let drawingMode = null, drawingPoints = [], tempLayer = null;
 
-// ---- HELPER WARNA & IKON ----
 function getColorByJenis(jenis) {
     const colors = {
         perkuliahan : '#3498db',
