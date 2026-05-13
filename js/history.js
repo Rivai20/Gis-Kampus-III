@@ -1,11 +1,7 @@
-/**
- * js/history.js
- * Operasi export dan hapus tabel history.
- */
+// ============================================================
+// HISTORY — Export & Hapus riwayat perubahan
+// ============================================================
 
-/**
- * Unduh seluruh history sebagai file JSON.
- */
 async function exportHistory() {
     const hist = await loadData('history');
     const a    = document.createElement('a');
@@ -14,9 +10,6 @@ async function exportHistory() {
     a.click();
 }
 
-/**
- * Hapus semua entri history dari database.
- */
 async function clearHistory() {
     if (!confirm('Hapus semua riwayat history?')) return;
     const tx = db.transaction('history', 'readwrite');
